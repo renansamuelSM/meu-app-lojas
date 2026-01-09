@@ -9,7 +9,7 @@ st.set_page_config(page_title="Busca Filial", page_icon="🔍", layout="centered
 st.markdown("""
     <style>
     #MainMenu, footer, header {visibility: hidden;}
-    .stApp { background-color: #66CC00; }
+    .stApp { background-color: #339900; }
     
     .stTextInput>div>div>input {
         background-color: #xxxxxx; color: black !important; border: 1px solid #333;
@@ -101,5 +101,6 @@ if os.path.exists(NOME_ARQUIVO):
 else:
 
     st.warning("Arquivo 'pasta_teste.xlsx' não encontrado na pasta.")
+
 
 
