@@ -1,72 +1,102 @@
 import streamlit as st
 import pandas as pd
+import os
 
 # 1. Configuração da Página
-st.set_page_config(
-    page_title="Consulta de CNPJ | Filiais",
-    page_icon="🔍",
-    layout="wide"
-)
+st.set_page_config(page_title="Busca Filial", page_icon="🔍", layout="centered")
 
-# 2. Estilo CSS para melhorar o visual
+# 2. CSS para o Visual Dark e o Botão HTML
 st.markdown("""
     <style>
-    .main { background-color: #f8f9fa; }
-    .stMetric { background-color: #ffffff; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    #MainMenu, footer, header {visibility: hidden;}
+    .stApp { background-color: #000000; }
+    
+    .stTextInput>div>div>input {
+        background-color: #1a1a1a; color: white !important; border: 1px solid #333;
+        border-radius: 5px; font-size: 20px; padding: 10px;
+    }
+
+    .caixa-resultado {
+        background-color: #ffffff; padding: 25px; border-radius: 15px;
+        text-align: center; margin-top: 20px; margin-bottom: 20px;
+    }
+
+    .cnpj-texto {
+        font-size: 48px; font-weight: 800; color: #000000 !important;
+        margin: 0; letter-spacing: -1px;
+    }
+    
+    .legenda-preta { color: #666666 !important; font-size: 14px; margin-bottom: 5px; font-weight: bold; }
+
+    .meu-botao-copiar {
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        border: 2px solid #333 !important;
+        width: 300px !important;
+        height: 55px !important;
+        border-radius: 10px !important;
+        font-weight: bold !important;
+        font-size: 18px !important;
+        cursor: pointer;
+        transition: 0.3s;
+    }
     </style>
-    """, unsafe_content_label=True)
+    """, unsafe_allow_html=True)
 
-st.title("🏢 Localizador de CNPJ por Filial")
-st.markdown("---")
+st.write("### 🔍 Consultar Filial")
 
-# 3. Barra Lateral para Upload
-with st.sidebar:
-    st.header("📂 Configurações")
-    arquivo = st.file_uploader("Carregue a planilha das filiais", type="xlsx")
+NOME_ARQUIVO = "pasta_teste.xlsx"
+
+if os.path.exists(NOME_ARQUIVO):
+    @st.cache_data
+    def carregar_dados():
+        # Lendo de forma simples, sem motores complexos
+        return pd.read_excel(NOME_ARQUIVO)
     
-    if arquivo:
-        df = pd.read_excel(arquivo, engine='openpyxl')
-        st.success("Planilha carregada!")
-        
-        st.divider()
-        colunas = df.columns.tolist()
-        col_filial = st.selectbox("Coluna da Filial", colunas, index=0)
-        col_cnpj = st.selectbox("Coluna do CNPJ", colunas, index=1)
+    df = carregar_dados()
+    busca = st.text_input("Busca", placeholder="Digite o código...", label_visibility="collapsed")
 
-# 4. Área Principal de Busca
-if arquivo:
-    col1, col2, col3 = st.columns([1, 2, 1])
-    
-    with col2:
-        st.subheader("🔍 Realizar Consulta")
-        busca = st.text_input("Digite o código da filial:", placeholder="Ex: 101")
+    if busca:
+        col_filial = df.columns[0] # Primeira coluna (Filial)
+        col_cnpj = df.columns[1]   # Segunda coluna (CNPJ)
         
-        if busca:
-            # Filtro inteligente (remove espaços e converte para texto)
-            resultado = df[df[col_filial].astype(str).str.strip() == str(busca).strip()]
+        # Filtra os dados
+        resultado = df[df[col_filial].astype(str).str.strip() == str(busca).strip()]
+
+        if not resultado.empty:
+            cnpj = str(resultado.iloc[0][col_cnpj])
             
-            if not resultado.empty:
-                cnpj_encontrado = str(resultado.iloc[0][col_cnpj])
-                
-                # Exibe o CNPJ em destaque
-                st.metric(label=f"CNPJ DA FILIAL {busca}", value=cnpj_encontrado)
-                
-                # Botão para facilitar copiar o CNPJ
-                st.code(cnpj_encontrado, language="text")
-                
-                with st.expander("📄 Detalhes completos da linha"):
-                    st.table(resultado)
-            else:
-                st.error(f"⚠️ Nenhuma filial com o código '{busca}' foi encontrada.")
+            # Mostra o Card Branco
+            st.markdown(f"""
+                <div class="caixa-resultado">
+                    <p class="legenda-preta">CNPJ ENCONTRADO</p>
+                    <p class="cnpj-texto">{cnpj}</p>
+                </div>
+                """, unsafe_allow_html=True)
 
-    # 5. Visualização Geral
-    st.divider()
-    with st.expander("📊 Ver planilha completa"):
-        st.dataframe(df, use_container_width=True)
-
+            # Botão de Cópia via JavaScript
+            st.components.v1.html(f"""
+                <div style="display: flex; justify-content: center; width: 100%;">
+                    <button id="btnCopiar" style="background-color: white; color: black; border: 2px solid #333; 
+                        width: 300px; height: 55px; border-radius: 10px; font-weight: bold; font-size: 18px; cursor: pointer;">
+                        COPIAR CNPJ
+                    </button>
+                </div>
+                <script>
+                document.getElementById('btnCopiar').addEventListener('click', function() {{
+                    const texto = "{cnpj}";
+                    navigator.clipboard.writeText(texto).then(function() {{
+                        const btn = document.getElementById('btnCopiar');
+                        btn.style.backgroundColor = '#000'; btn.style.color = '#fff'; btn.innerText = 'COPIADO!';
+                        setTimeout(() => {{
+                            btn.style.backgroundColor = 'white'; btn.style.color = 'black'; btn.innerText = 'COPIAR CNPJ';
+                        }}, 1000);
+                    }});
+                }});
+                </script>
+            """, height=70)
+            
+        else:
+            st.error("Filial não encontrada.")
 else:
-    st.info("👈 Por favor, carregue o arquivo Excel na barra lateral para começar.")
-    # Exemplo visual
-    st.write("### Exemplo de formato aceito:")
-    exemplo = pd.DataFrame({'Filial': ['10', '20'], 'CNPJ': ['00.000.000/0001-00', '11.111.111/0001-11']})
-    st.table(exemplo)
+    st.warning("Arquivo 'pasta_teste.xlsx' não encontrado na pasta.")
