@@ -12,7 +12,7 @@ st.markdown("""
     .stApp { background-color: #66CC00; }
     
     .stTextInput>div>div>input {
-        background-color: #1a1a1a; color: white !important; border: 1px solid #333;
+        background-color: #xxxxxx; color: white !important; border: 1px solid #333;
         border-radius: 5px; font-size: 20px; padding: 10px;
     }
 
@@ -101,3 +101,4 @@ if os.path.exists(NOME_ARQUIVO):
 else:
 
     st.warning("Arquivo 'pasta_teste.xlsx' não encontrado na pasta.")
+
